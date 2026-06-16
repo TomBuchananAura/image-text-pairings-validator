@@ -236,7 +236,10 @@ Image-Text Pairing Validation Tool for TTB Labels &mdash; Demo Environment
 
 <script>
 // API endpoint configuration for the processing service
-const API_BASE = "http://127.0.0.1:8000/api/v1";
+const isProd = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+const API_BASE = isProd 
+  ? "https://image-text-pairings-validator.onrender.com/api/v1" 
+  : "http://127.0.0.1:8000/api/v1";
 
 // DOM element references for each panel container
 const els = {
