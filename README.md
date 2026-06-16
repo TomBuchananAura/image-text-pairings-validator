@@ -1,3 +1,110 @@
+# Image-Text Pairings Validator (ITPV)
+
+## Summary
+
+The *Image-Text Pairings Validator* (**ITPV**) is an intelligent prototype designed to solve a significant pain point in the TTB compliance review process. Previously, agents had to manually compare label artwork against text fields captured from accompanying applications—a tedious and antiquated task. My goal was to build a sophisticated pipeline that simultaneously ingests high-variance label images and structured application data. ITPV automatically validates if the critical information on the physical label matches what was claimed in the digital form, providing instant, quantifiable evidence of compliance gaps.
+
+---
+
+## Project Deliverables
+As part of this submission, I am delivering two main items:
+1. **Source Code Repository**: The full source code and comprehensive documentation are available here: [https://github.com/TomBuchananAura/image-text-pairings-validator](https://github.com/TomBuchananAura/image-text-pairings-validator)
+2. **Deployed Application URL**:
+    *   **Status**: Stable backend deployment on Render.
+    *   **Note on Deployment**: Free-tier hosting environments (Vercel, Railway, etc.) have presented hardware and library compatibility issues regarding API connection restrictions and memory limitations. I finally decided on a paid tier on Render to increase the RAM cap from 512MB to 2GB, as the project needs about 600MB of RAM in CPU-only deployment. However, the best way to assess the working prototype is with a local deployment, as an appropriate GPU setup renders nearly **10x performance** over CPU-only configurations.
+    *   **Frontend Preview**: [https://tombuchananaura.github.io/image-text-pairings-validator/](https://tombuchananaura.github.io/image-text-pairings-validator/) (As mentioned above, the CPU-only implementation is not the configuration in which the tool was intended to function.)
+
+---
+
+## Key Features & Technical Approach
+### Core Value Proposition: Cross-Validation
+The ITPV doesn't just read text; **it validates**. The system compares what is visually present on the label against specific fields in the application data, directly addressing the business need identified by stakeholders like Sarah Chen:
+
+>"An agent pulls up an application, looks at the label artwork, and checks that what's on the label matches what's in the application."
+
+### Robust Architecture
+*   **Input**: The system accepts pairs of data: a labeled image alongside its corresponding set of seven critical form metrics. For integration ease, the required input format is standardized as a **CSV file**. The seven relevant application field are (in order):
+•	Brand name
+•	Class/type designation
+•	Alcohol content (na allowed)
+•	Net contents
+•	Name and address of bottler/producer
+•	Country of origin for imports (na allowed)
+•	Government Health Warning Statement (yes/no)
+
+*   **Processing Logic (OCR)**: The intelligence backbone uses **EasyOCR**, leveraging deep learning models (e.g., CNNs like ResNet and VGG) for feature extraction, allowing processing of complex images into usable text data.
+    *   *Scalability Note*: EasyOCR's model flexibility allows the organization to fine-tune a dedicated model on relevant labeling data for improved accuracy in future iterations.
+*   **Metrics & Checks**: We focus on seven primary metrics identified as critical by stakeholders, plus specialized checks:
+    *   **Government Warning Check**: Verifies the verbatim government warning phrase and assesses capitalization for the first two words (providing an eighth metric).
+    *   **Nuanced Scoring**: Instead of a simple "Yes/No," detailed **confidence ranges (1–100)** are generated, giving reviewers deep, actionable insight into match proximity.
+### User Experience (UX) Design
+A minimalist quad-grid dashboard was implemented to ensure intuition for non-technical government staff:
+*   **Top Left**: Upload function and simple usage instructions.
+*   **Top Right**: Real-time event tracker showing processing status.
+*   **Bottom Left**: The history queue—a clear, itemized list of every submitted job with its current status.
+*   **Bottom Right**: The results deep-dive area. Detailed compliance reports appear here upon job selection from the bottom left. A selector at the bottom allows the user to see either a) plain scores, b) scores with color, or c) quick visual symbols with color. NA fields are hardcoded to 0 and grayed out.
+
+> [!IMPORTANT]
+> This system features no external API calls or installation of external processing engines.
+
+---
+## Performance & Technical Constraints (The GPU Reality)
+It is crucial to understand the technical ceiling on performance:
+
+*   **Optimal Performance**: When optimized using **PyTorch/CUDA GPU acceleration**, local testing achieved average processing times of just **1–1.5 seconds** per image-text pair in a mid-range consumer GPU environment.
+*   **Major Constraint (CPU)**: Running the process on a standard CPU leads to significant degradation, increasing job time closer to **10–13 seconds** per pair - even 10-17 seconds on the demo server. This constraint dictated the deployment recommendation.
+
+---
+## Installation & Local Setup Instructions
+
+For development or testing environments, I kept the setup as simple as possible:
+
+1. **Clone Repository:**
+   ```bash
+   git clone https://github.com/TomBuchananAura/image-text-pairings-validator
+   cd image-text-pairings-validator
+   ```
+
+2. **Setup Environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Use the appropriate source command for your OS (e.g., '. venv/Scripts/activate' on Windows)
+   ```
+
+3. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run Application:**
+   To run the application directly:
+   ```bash
+   python main.py
+   ```
+   **OR**, if running via Uvicorn is necessary:
+   ```bash
+   venv\Scripts\python.exe -m uvicorn main:app --reload
+   ```
+> [!TIP] 
+> Performance Note: To achieve the fastest tested performance (1–1.5 seconds), please ensure your Python environment has a version of PyTorch installed that is compatible with your system's GPU drivers!
+
+## Testing Data
+
+I have included sample image-text pairs in the repo. These images were pulled from TTB's sample label instructions documentation, and the corresponding text files were generated manually. I intentionally chose these pairs because they showcase the strengths and limitations of the tool.
+
+## Future Enhancements
+
+1. **Frontend-Backend API Improvements**: This application has a complex implementation of POST and SSE networking for each job, which is intended to balance large batch processing with real-time progress streams. Still, some optimization and timeout proofing would allow for more stable improvement across a wider variety of hosting platforms and ensure scalability for ingesting hundreds of jobs in each batch.
+2. **TTB Label Specific Pipeline Changes**: The labels encountered in this industry often have text facing multiple directions, and this presents a challenge for most out-of-the-box OCR models. This could be improved with a image rotation-scan loop for when a field comes back with a low score. While the implementation is not that complex, it each additional scan at a new angle would almost double the original processing time. This would not be particularly noticeable for a GPU-enabled environment, but would balloon CPU processing time over 20 seconds in most environments.
+3. **Adding API Endpoints for Data Import/Export**: In a real-world deployment, ingestion and completion data should not be manual. This system's architecture is flexible enough that adding API entry/exit points would not be a difficult undertaking. Before data flows downstream, this tool could also be expanded to give users a opportunity to enter reviewer data, e.g., Accept/Reject for applications, reviewer notes, etc.   
+4. **Additional AI/ML Functionality**: While I think a retrained application of AI models was appropriate for the scope of this exercise, the overall TTB label review workflow certainly has potential for expended agentic/automation integration. Even a small language model issuing a accept/reject recommendation to reviewers based on a set of internal rules could add additional efficiencies without adding external API calls or significant inference cost.
+5. **Error Handling**: There are a couple features that I have not had time to flesh out. Uploads that do not have an image-text pair sharing the name base name do properly result in a job error, but the messaging in the status window is not descriptive enough. Also, when there are network related errors, the logging and messaging to the user needs improvement.
+6. **CPU vs GPU Indicator**: There is logging in the terminal for this, but it would be helpful for the frontend to let users know the state of their hardware acceleration. 
+
+   
+> [!NOTE]
+> --------------------------ASSIGNMENT INSTRUCTIONS BEGIN HERE---------------------------
+
 # **Take-Home Project: AI-Powered Alcohol Label Verification App**
 
 ## **Project Background & Stakeholder Context**
@@ -116,93 +223,3 @@ We understand this is time-constrained. A working core application with clean co
 
 Good luck!
 
-# Image-Text Pairings Validator (ITPV)
-
-## Summary
-
-The *Image-Text Pairings Validator* (**ITPV**) is an intelligent prototype designed to solve a significant pain point in the compliance review process. Previously, agents had to manually compare label artwork against text fields captured from accompanying applications—a tedious and antiquated task. My goal was to build a sophisticated pipeline that simultaneously ingests high-variance label images and structured application data. ITPV automatically validates if the critical information on the physical label matches what was claimed in the digital form, providing instant, quantifiable evidence of compliance gaps.
-
----
-
-## Project Deliverables
-As part of this submission, I am delivering two main items:
-1. **Source Code Repository**: The full source code and comprehensive documentation are available here: [https://github.com/TomBuchananAura/image-text-pairings-validator](https://github.com/TomBuchananAura/image-text-pairings-validator)
-2. **Deployed Application URL**:
-    *   **Status**: Testing Required.
-    *   **Note on Deployment**: Free-tier hosting environments (Vercel, Railway, etc.) have presented hardware and library compatibility issues regarding API connection restrictions and memory limitations. The best way to assess the working prototype is with a local deployment, as an appropriate GPU setup renders nearly **10x performance** over CPU-only configurations.
-    *   **Frontend Preview**: [https://tombuchananaura.github.io/image-text-pairings-validator/](https://tombuchananaura.github.io/image-text-pairings-validator/) (Backend deployment on Render is currently unstable.)
-
----
-
-## Key Features & Technical Approach
-### Core Value Proposition: Cross-Validation
-The ITPV doesn't just read text; **it validates**. The system compares what is visually present on the label against specific fields in the application data—directly addressing the business need identified by stakeholders like Sarah Chen ("An agent pulls up an application, looks at the label artwork, and checks that what's on the label matches what's in the application.").
-### Robust Architecture
-*   **Input**: The system accepts pairs of data: a labeled image alongside its corresponding set of seven critical form metrics. For integration ease, the required input format is standardized as a **CSV file**.
-*   **Processing Logic (OCR)**: The intelligence backbone uses **EasyOCR**, leveraging deep learning models (e.g., CNNs like ResNet and VGG) for feature extraction, allowing processing of complex images into usable text data.
-    *   *Scalability Note*: EasyOCR's model flexibility allows the organization to fine-tune a dedicated model on relevant labeling data for improved accuracy in future iterations.
-*   **Metrics & Checks**: We focus on seven primary metrics identified as critical by stakeholders, plus specialized checks:
-    *   **Government Warning Check**: Verifies the verbatim government warning phrase and assesses capitalization for the first two words (providing an eighth metric).
-    *   **Nuanced Scoring**: Instead of a simple "Yes/No," detailed **confidence ranges (1–100)** are generated, giving reviewers deep, actionable insight into match proximity.
-### User Experience (UX) Design
-A minimalist quad-grid dashboard was implemented to ensure intuition for non-technical government staff:
-*   **Top Left**: Upload function and simple usage instructions.
-*   **Top Right**: Real-time event tracker showing processing status.
-*   **Bottom Left**: The history queue—a clear, itemized list of every submitted job with its current status.
-*   **Bottom Right**: The results deep-dive area. Detailed compliance reports appear here upon job selection from the bottom left.
-
----
-## Performance & Technical Constraints (The GPU Reality)
-It is crucial to understand the technical ceiling on performance:
-
-*   **Optimal Performance**: When optimized using **PyTorch/CUDA GPU acceleration**, local testing achieved average processing times of just **1–1.5 seconds** per image-text pair in a mid-range consumer GPU environment.
-*   **Major Constraint (CPU)**: Running the process on a standard CPU leads to significant degradation, increasing job time closer to **10–13 seconds** per pair. This constraint dictated the deployment recommendation.
-
----
-## Installation & Local Setup Instructions
-
-For development or testing environments, I kept the setup as simple as possible:
-
-
-For development or testing environments, the setup process has been kept as simple as possible:
-
-1. **Clone Repository:**
-   ```bash
-   git clone https://github.com/TomBuchananAura/image-text-pairings-validator
-   cd image-text-pairings-validator
-   ```
-
-2. **Setup Environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Use the appropriate source command for your OS (e.g., '. venv/Scripts/activate' on Windows)
-   ```
-
-3. **Install Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run Application:**
-   To run the application directly:
-   ```bash
-   python main.py
-   ```
-   **OR**, if running via Uvicorn is necessary:
-   ```bash
-   venv\Scripts\python.exe -m uvicorn main:app --reload
-   ```
-
-   Performance Note: To achieve the fastest tested performance (1–1.5 seconds), please ensure your Python environment has a version of PyTorch installed that is compatible with your system's GPU drivers!
-
-## Testing Data
-
-I have included four sample image-text pairs in the repo. These images were pulled from TTB's sample label instructions documentation, and the corresponding text files were generated manually. I intentionally chose these pairs because they showcase the strengths and limitations of the tool.
-
-## Future Enhancements
-
-1. **Frontend-Backend API Improvements**: This application has a complex implementation of POST and SSE networking for each job, which is intended to balance large batch processing with real-time progress streams. Still, some optimization and timeout proofing would allow for more stable improvement across a wider variety of hosting platforms.
-2. **TTB Label Specific Pipeline Changes**: The labels encountered in this industry often have text facing multiple directions, and this presents a challenge for most out-of-the-box OCR models. This could be improved with a image rotation-scan loop for when a field comes back with a low score. While the implementation is not that complex, it each additional scan at a new angle would almost double the original processing time. This would not be particularly noticeable for a GPU-enabled environment, but would balloon CPU processing time over 20 seconds in most environments.
-3. **Adding API Endpoints for Export**: In a real-world deployment, completed job data should either flow to a new system, or this tool could be expanded to give users a opportunity to enter reviewer data, e.g., Accept/Reject for applications, reviewer notes, etc.   
-4. **Additional AI/ML Functionality**: While I think a retrained application of AI models was appropriate for the scope of this exercise, the overall TTB label review workflow certainly has potential for expended agentic/automation integration. Even a small language model issuing a accept/reject recommendation to reviewers based on a set of internal rules could add additional efficiencies without adding external API calls or significant inference cost. 
-   
