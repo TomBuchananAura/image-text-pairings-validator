@@ -163,7 +163,6 @@ It is crucial to understand the technical ceiling on performance:
 
 For development or testing environments, I kept the setup as simple as possible:
 
-## 🚀 Installation & Local Setup
 
 For development or testing environments, the setup process has been kept as simple as possible:
 
@@ -195,3 +194,15 @@ For development or testing environments, the setup process has been kept as simp
    ```
 
    Performance Note: To achieve the fastest tested performance (1–1.5 seconds), please ensure your Python environment has a version of PyTorch installed that is compatible with your system's GPU drivers!
+
+## Testing Data
+
+I have included four sample image-text pairs in the repo. These images were pulled from TTB's sample label instructions documentation, and the corresponding text files were generated manually. I intentionally chose these pairs because they showcase the strengths and limitations of the tool.
+
+## Future Enhancements
+
+1. **Frontend-Backend API Improvements**: This application has a complex implementation of POST and SSE networking for each job, which is intended to balance large batch processing with real-time progress streams. Still, some optimization and timeout proofing would allow for more stable improvement across a wider variety of hosting platforms.
+2. **TTB Label Specific Pipeline Changes**: The labels encountered in this industry often have text facing multiple directions, and this presents a challenge for most out-of-the-box OCR models. This could be improved with a image rotation-scan loop for when a field comes back with a low score. While the implementation is not that complex, it each additional scan at a new angle would almost double the original processing time. This would not be particularly noticeable for a GPU-enabled environment, but would balloon CPU processing time over 20 seconds in most environments.
+3. **Adding API Endpoints for Export**: In a real-world deployment, completed job data should either flow to a new system, or this tool could be expanded to give users a opportunity to enter reviewer data, e.g., Accept/Reject for applications, reviewer notes, etc.   
+4. **Additional AI/ML Functionality**: While I think a retrained application of AI models was appropriate for the scope of this exercise, the overall TTB label review workflow certainly has potential for expended agentic/automation integration. Even a small language model issuing a accept/reject recommendation to reviewers based on a set of internal rules could add additional efficiencies without adding external API calls or significant inference cost. 
+   
