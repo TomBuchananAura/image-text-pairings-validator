@@ -115,4 +115,83 @@ We understand this is time-constrained. A working core application with clean co
 *Questions? Reach out for clarification—though we also value how you fill in gaps independently.*
 
 Good luck!
-```
+
+# Image-Text Pairings Validator (ITPV)
+
+## Summary
+
+The *Image-Text Pairings Validator* (**ITPV**) is an intelligent prototype designed to solve a significant pain point in the compliance review process. Previously, agents had to manually compare label artwork against text fields captured from accompanying applications—a tedious and antiquated task. My goal was to build a sophisticated pipeline that simultaneously ingests high-variance label images and structured application data. ITPV automatically validates if the critical information on the physical label matches what was claimed in the digital form, providing instant, quantifiable evidence of compliance gaps.
+
+---
+
+## Project Deliverables
+As part of this submission, I am delivering two main items:
+1. **Source Code Repository**: The full source code and comprehensive documentation are available here: [https://github.com/TomBuchananAura/image-text-pairings-validator](https://github.com/TomBuchananAura/image-text-pairings-validator)
+2. **Deployed Application URL**:
+    *   **Status**: Testing Required.
+    *   **Note on Deployment**: Free-tier hosting environments (Vercel, Railway, etc.) have presented hardware and library compatibility issues regarding API connection restrictions and memory limitations. The best way to assess the working prototype is with a local deployment, as an appropriate GPU setup renders nearly **10x performance** over CPU-only configurations.
+    *   **Frontend Preview**: [https://tombuchananaura.github.io/image-text-pairings-validator/](https://tombuchananaura.github.io/image-text-pairings-validator/) (Backend deployment on Render is currently unstable.)
+
+---
+
+## Key Features & Technical Approach
+### Core Value Proposition: Cross-Validation
+The ITPV doesn't just read text; **it validates**. The system compares what is visually present on the label against specific fields in the application data—directly addressing the business need identified by stakeholders like Sarah Chen ("An agent pulls up an application, looks at the label artwork, and checks that what's on the label matches what's in the application.").
+### Robust Architecture
+*   **Input**: The system accepts pairs of data: a labeled image alongside its corresponding set of seven critical form metrics. For integration ease, the required input format is standardized as a **CSV file**.
+*   **Processing Logic (OCR)**: The intelligence backbone uses **EasyOCR**, leveraging deep learning models (e.g., CNNs like ResNet and VGG) for feature extraction, allowing processing of complex images into usable text data.
+    *   *Scalability Note*: EasyOCR's model flexibility allows the organization to fine-tune a dedicated model on relevant labeling data for improved accuracy in future iterations.
+*   **Metrics & Checks**: We focus on seven primary metrics identified as critical by stakeholders, plus specialized checks:
+    *   **Government Warning Check**: Verifies the verbatim government warning phrase and assesses capitalization for the first two words (providing an eighth metric).
+    *   **Nuanced Scoring**: Instead of a simple "Yes/No," detailed **confidence ranges (1–100)** are generated, giving reviewers deep, actionable insight into match proximity.
+### User Experience (UX) Design
+A minimalist quad-grid dashboard was implemented to ensure intuition for non-technical government staff:
+*   **Top Left**: Upload function and simple usage instructions.
+*   **Top Right**: Real-time event tracker showing processing status.
+*   **Bottom Left**: The history queue—a clear, itemized list of every submitted job with its current status.
+*   **Bottom Right**: The results deep-dive area. Detailed compliance reports appear here upon job selection from the bottom left.
+
+---
+## Performance & Technical Constraints (The GPU Reality)
+It is crucial to understand the technical ceiling on performance:
+
+*   **Optimal Performance**: When optimized using **PyTorch/CUDA GPU acceleration**, local testing achieved average processing times of just **1–1.5 seconds** per image-text pair in a mid-range consumer GPU environment.
+*   **Major Constraint (CPU)**: Running the process on a standard CPU leads to significant degradation, increasing job time closer to **10–13 seconds** per pair. This constraint dictated the deployment recommendation.
+
+---
+## Installation & Local Setup Instructions
+
+For development or testing environments, I kept the setup as simple as possible:
+
+## 🚀 Installation & Local Setup
+
+For development or testing environments, the setup process has been kept as simple as possible:
+
+1. **Clone Repository:**
+   ```bash
+   git clone https://github.com/TomBuchananAura/image-text-pairings-validator
+   cd image-text-pairings-validator
+   ```
+
+2. **Setup Environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Use the appropriate source command for your OS (e.g., '. venv/Scripts/activate' on Windows)
+   ```
+
+3. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run Application:**
+   To run the application directly:
+   ```bash
+   python main.py
+   ```
+   **OR**, if running via Uvicorn is necessary:
+   ```bash
+   venv\Scripts\python.exe -m uvicorn main:app --reload
+   ```
+
+   Performance Note: To achieve the fastest tested performance (1–1.5 seconds), please ensure your Python environment has a version of PyTorch installed that is compatible with your system's GPU drivers!
